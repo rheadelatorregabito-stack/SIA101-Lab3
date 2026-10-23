@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In - Role-Based Lab</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="centered">
+  <div class="card">
+    <h1>Sign In</h1>
+    <p class="muted">Use an account created via Postman</p>
+
+    <form id="loginForm" autocomplete="off">
+      <label>
+        Email
+        <input type="email" id="email" placeholder="you@lab.com" required />
+      </label>
+      <label>
+        Password
+        <input type="password" id="password" placeholder="......" required />
+      </label>
+      <button type="submit" class="btn primary">Login</button>
+    </form>
+
+    <p id="msg" class="msg"></p>
+
+    <div class="hint">
+      <strong>No accounts yet?</strong>
+      <div>Create one in Postman first:</div>
+      <div><code>POST http://localhost:3000/api/users</code></div>
+      <div>Body: <code>{ "name", "email", "password", "role" }</code></div>
+      <div>Roles: <code>admin</code> · <code>staff</code> · <code>user</code></div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const msg = document.getElementById('msg');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.textContent = '';
+      msg.className = 'msg';
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!email.includes('@')) {
+        msg.textContent = 'Please enter a valid email address.';
+        msg.classList.add('error');
+        return;
+      }
+      if (password.length < 6) {
+        msg.textContent = 'Password must be at least 6 characters.';
+        msg.classList.add('error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          msg.textContent = data.error || 'Login failed.';
+          msg.classList.add('error');
+          return;
+        }
+
+        sessionStorage.setItem('currentUser', JSON.stringify(data.user));
+
+        window.location.href = data.redirectTo;
+      } catch (err) {
+        msg.textContent = 'Cannot reach the server. Is it running?';
+        msg.classList.add('error');
+      }
+    });
+  </script>
+</body>
+</html>

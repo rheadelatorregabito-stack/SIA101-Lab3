@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="topbar">
+      <h1>Staff Dashboard</h1>
+      <button id="logoutBtn" class="btn danger">Logout</button>
+    </header>
+
+    <section class="card">
+      <h2>Welcome, <span id="staffName">...</span></h2>
+      <p class="muted">Signed in as <strong id="staffEmail"></strong></p>
+    </section>
+
+    <section class="card">
+      <h2>Staff Tools</h2>
+      <ul>
+        <li>Review submitted records</li>
+        <li>Update content and announcements</li>
+        <li>Reply to user inquiries</li>
+      </ul>
+      <p class="muted">Staff members cannot manage user accounts.</p>
+    </section>
+  </div>
+
+  <script>
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+
+    if (!currentUser || currentUser.role !== 'staff') {
+      window.location.href = '/login.html';
+    } else {
+      document.getElementById('staffName').textContent = currentUser.name;
+      document.getElementById('staffEmail').textContent = currentUser.email;
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      sessionStorage.removeItem('currentUser');
+      window.location.href = '/login.html';
+    });
+  </script>
+</body>
+</html>
