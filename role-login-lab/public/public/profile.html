@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Profile</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="topbar">
+      <h1>My Profile</h1>
+      <button id="backBtn" class="btn">← Back</button>
+    </header>
+
+    <section class="card">
+      <h2>Edit Your Information</h2>
+      <p class="muted">Leave password fields blank to keep your current password.</p>
+
+      <form id="profileForm" autocomplete="off">
+        <label>
+          Full Name
+          <input type="text" id="name" required />
+        </label>
+        <label>
+          Email
+          <input type="email" id="email" required />
+        </label>
+
+        <hr style="margin:1.25rem 0;border:none;border-top:1px solid #e2e8f0;" />
+
+        <label>
+          Current Password <span class="muted">(only if changing password)</span>
+          <input type="password" id="currentPassword" placeholder="Leave blank to keep current" />
+        </label>
+        <label>
+          New Password
+          <input type="password" id="newPassword" placeholder="At least 6 characters" />
+        </label>
+
+        <button type="submit" class="btn primary">Save Changes</button>
+      </form>
+
+      <p id="msg" class="msg"></p>
+    </section>
+  </div>
+
+  <script>
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+
+    if (!currentUser) {
+      window.location.href = '/login.html';
+    }
+
+    const form = document.getElementById('profileForm');
+    const msg = document.getElementById('msg');
+
+    document.getElementById('name').value = currentUser.name || '';
+    document.getElementById('email').value = currentUser.email || '';
+
+    document.getElementById('backBtn').addEventListener('click', () => {
+      let target = '/user.html';
+      if (currentUser.role === 'admin') target = '/admin.html';
+      else if (currentUser.role === 'staff') target = '/staff.html';
+      window.location.href = target;
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.textContent = '';
+      msg.className = 'msg';
+
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const currentPassword = document.getElementById('currentPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+
+      const body = { name, email };
+      if (newPassword) {
+        body.currentPassword = currentPassword;
+        body.newPassword = newPassword;
+      }
+
+      try {
+        const res = await fetch(`/api/profile/${currentUser.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          msg.textContent = data.error || 'Update failed.';
+          msg.classList.add('error');
+          return;
+        }
+
+        sessionStorage.setItem('currentUser', JSON.stringify(data.user));
+
+        msg.textContent = 'Profile updated successfully!';
+        msg.style.color = '#16a34a';
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+      } catch {
+        msg.textContent = 'Cannot reach the server. Is it running?';
+        msg.classList.add('error');
+      }
+    });
+  </script>
+</body>
+</html>
