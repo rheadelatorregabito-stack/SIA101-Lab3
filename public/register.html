@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register — Role-Based Lab</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="centered">
+  <div class="card">
+    <h1>Create an Account</h1>
+    <p class="muted">Self-registration creates a normal <strong>user</strong> account.</p>
+
+    <form id="registerForm" autocomplete="off">
+      <label>
+        Full Name
+        <input type="text" id="name" placeholder="Juan Dela Cruz" required />
+      </label>
+      <label>
+        Email
+        <input type="email" id="email" placeholder="you@lab.com" required />
+      </label>
+      <label>
+        Password
+        <input type="password" id="password" placeholder="At least 6 characters" required />
+      </label>
+      <label>
+        Confirm Password
+        <input type="password" id="confirm" placeholder="Re-type password" required />
+      </label>
+      <button type="submit" class="btn primary">Register</button>
+    </form>
+
+    <p id="msg" class="msg"></p>
+
+    <p class="muted" style="margin-top:1rem;text-align:center;">
+      Already have an account? <a href="/login.html">Back to Login</a>
+    </p>
+  </div>
+
+  <script>
+    const form = document.getElementById('registerForm');
+    const msg = document.getElementById('msg');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.textContent = '';
+      msg.className = 'msg';
+
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirm = document.getElementById('confirm').value;
+
+      if (!email.includes('@')) {
+        msg.textContent = 'Please enter a valid email address.';
+        msg.classList.add('error');
+        return;
+      }
+      if (password.length < 6) {
+        msg.textContent = 'Password must be at least 6 characters.';
+        msg.classList.add('error');
+        return;
+      }
+      if (password !== confirm) {
+        msg.textContent = 'Passwords do not match.';
+        msg.classList.add('error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          msg.textContent = data.error || 'Registration failed.';
+          msg.classList.add('error');
+          return;
+        }
+
+        msg.textContent = 'Registration successful! Redirecting to login...';
+        msg.style.color = '#16a34a';
+
+        setTimeout(() => { window.location.href = '/login.html'; }, 1500);
+      } catch {
+        msg.textContent = 'Cannot reach the server. Is it running?';
+        msg.classList.add('error');
+      }
+    });
+  </script>
+</body>
+</html>
