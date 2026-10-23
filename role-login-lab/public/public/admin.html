@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="topbar">
+      <h1>Admin Dashboard</h1>
+      <div>
+        <button id="profileBtn" class="btn">My Profile</button>
+        <button id="logoutBtn" class="btn danger">Logout</button>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Welcome, <span id="adminName">...</span></h2>
+      <p class="muted">Signed in as <strong id="adminEmail"></strong> (role: admin)</p>
+    </section>
+
+    <section class="card">
+      <h2>Registered Users</h2>
+      <p class="muted">Manage users directly from this page.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="userTableBody"></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+
+    if (!currentUser || currentUser.role !== 'admin') {
+      window.location.href = '/login.html';
+    } else {
+      document.getElementById('adminName').textContent = currentUser.name;
+      document.getElementById('adminEmail').textContent = currentUser.email;
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      sessionStorage.removeItem('currentUser');
+      window.location.href = '/login.html';
+    });
+
+    document.getElementById('profileBtn').addEventListener('click', () => {
+      window.location.href = '/profile.html';
+    });
+
+    let cachedUsers = [];
+
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/users');
+        cachedUsers = await res.json();
+        const tbody = document.getElementById('userTableBody');
+
+        if (!cachedUsers.length) {
+          tbody.innerHTML = '<tr><td colspan="5">No users yet.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = cachedUsers.map(u => `
+          <tr>
+            <td>${u.id}</td>
+            <td>${u.name}</td>
+            <td>${u.email}</td>
+            <td><span class="badge ${u.role}">${u.role}</span></td>
+            <td>
+              <button class="btn small" onclick="editUser(${u.id})">Edit</button>
+              <button class="btn small danger" onclick="deleteUser(${u.id})">Delete</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch {
+        document.getElementById('userTableBody').innerHTML =
+          '<tr><td colspan="5">Failed to load users.</td></tr>';
+      }
+    }
+
+    async function deleteUser(id) {
+      const user = cachedUsers.find(u => u.id === id);
+      if (user && user.id === currentUser.id) {
+        alert('You cannot delete your own admin account.');
+        return;
+      }
+      if (!confirm(`Delete user #${id}? This cannot be undone.`)) return;
+
+      try {
+        const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+        if (res.status === 204) {
+          loadUsers();
+        } else {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || 'Failed to delete user.');
+        }
+      } catch {
+        alert('Cannot reach the server.');
+      }
+    }
+
+    async function editUser(id) {
+      const user = cachedUsers.find(u => u.id === id);
+      if (!user) return;
+
+      const newName = prompt('New name:', user.name);
+      if (newName === null) return;
+
+      const newEmail = prompt('New email:', user.email);
+      if (newEmail === null) return;
+
+      const newRole = prompt('New role (admin / staff / user):', user.role);
+      if (newRole === null) return;
+
+      try {
+        const res = await fetch(`/api/users/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName, email: newEmail, role: newRole })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          loadUsers();
+        } else {
+          alert(data.error || 'Failed to update user.');
+        }
+      } catch {
+        alert('Cannot reach the server.');
+      }
+    }
+
+    if (currentUser && currentUser.role === 'admin') loadUsers();
+  </script>
+</body>
+</html>
